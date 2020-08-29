@@ -1,7 +1,7 @@
 const express = require('express');
 const app = express();
 const { graphqlHTTP } = require('express-graphql');
-const { GraphQLSchema, GraphQLObjectType, GraphQLInt } = require('graphql');
+const { GraphQLSchema, GraphQLObjectType, GraphQLInt, GraphQLString, GraphQLNonNull } = require('graphql');
 const { books, authors } = require('./data');
 const { ListBookType, ListAuthorType, BookType, AuthorType } = require('./types');
 const { delay } = require('./utils');
@@ -47,8 +47,32 @@ const RootQueryType = new GraphQLObjectType({
     }),
 });
 
+const RootMutationType = new GraphQLObjectType({
+    name: 'mutation',
+    description: 'make mutations here',
+    fields: () => ({
+        addBook: {
+            type: BookType,
+            args: {
+                name: {
+                    type: GraphQLNonNull(GraphQLString),
+                },
+                authorId: {
+                    type: GraphQLNonNull(GraphQLInt),
+                },
+            },
+            resolve: async (_, { name, authorId }) => {
+                const book = { id: books.length + 1, name, authorId };
+                books.push(book);
+                return await delay(500, book);
+            },
+        },
+    }),
+});
+
 const schema = new GraphQLSchema({
     query: RootQueryType,
+    mutation: RootMutationType,
 });
 
 app.use(
